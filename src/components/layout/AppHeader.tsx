@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function AppHeader() {
-  const { currentUser, switchUser, syncStatus, isSupabaseLive } = useBusinessStore();
+  const { currentUser, switchUser, syncStatus, isSupabaseLive, refreshData } = useBusinessStore();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   return (
@@ -48,13 +48,18 @@ export default function AppHeader() {
         {/* Right Action Area */}
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Real-time Sync Status Indicator */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-surface-card border border-surface-border">
+          <button
+            onClick={() => refreshData()}
+            title="Click to refresh and sync with cloud"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-surface-card border border-surface-border hover:border-gold-500/50 hover:bg-surface-elevated transition-colors cursor-pointer"
+          >
             {syncStatus === 'connected' && (
               <>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-emerald-400 font-medium hidden xs:inline text-[11px]">
                   {isSupabaseLive ? 'Cloud Realtime' : 'Central Sync'}
                 </span>
+                <RefreshCw className="w-2.5 h-2.5 text-neutral-500 hover:text-gold-400 ml-0.5" />
               </>
             )}
             {syncStatus === 'synchronizing' && (
@@ -75,7 +80,7 @@ export default function AppHeader() {
                 <span className="text-red-400 hidden xs:inline text-[11px]">Sync Failed</span>
               </>
             )}
-          </div>
+          </button>
 
           {/* Quick Member Switching Pill */}
           <div className="relative">

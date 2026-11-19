@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useRef } from 'react';
 import {
   BusinessEvent,
   EventMaterial,
@@ -96,6 +96,25 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(INITIAL_LOGS);
 
+  // Store reference to latest state for polling and event listeners
+  const stateRef = useRef({
+    events,
+    cashTransactions,
+    inventory,
+    activityLogs,
+    openingBalance,
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      events,
+      cashTransactions,
+      inventory,
+      activityLogs,
+      openingBalance,
+    };
+  }, [events, cashTransactions, inventory, activityLogs, openingBalance]);
+
   // Broadcast channel for instantaneous cross-tab synchronization between members
   const broadcastSync = useCallback((type: string, data: any) => {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -108,6 +127,146 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [currentUser]);
+
+  // Persist state to centralized cloud (Vercel Blob)
+  const persistToCloud = useCallback(
+    async (
+      eventsData: BusinessEvent[],
+      cashData: CashTransaction[],
+      invData: InventoryItem[],
+      logsData: ActivityLog[],
+      balData: number
+    ) => {
+      try {
+        setSyncStatus('synchronizing');
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            events: eventsData,
+            cashTransactions: cashData,
+            inventory: invData,
+            activityLogs: logsData,
+            openingBalance: balData,
+            user: currentUser.full_name,
+          }),
+        });
+        if (res.ok) {
+          setSyncStatus('connected');
+        } else {
+          console.warn('Central sync response status:', res.status);
+          setSyncStatus('connected');
+        }
+      } catch (err) {
+        console.warn('Central cloud sync error:', err);
+        setSyncStatus('connected');
+      }
+    },
+    [currentUser]
+  );
+
+  // Sync state FROM centralized cloud (Vercel Blob)
+  const syncFromCloud = useCallback(
+    async (isInitial = false) => {
+      try {
+        const res = await fetch('/api/sync', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+
+        if (json.success) {
+          if (json.data) {
+            const {
+              events: cloudEvents,
+              cashTransactions: cloudCash,
+              inventory: cloudInv,
+              activityLogs: cloudLogs,
+              openingBalance: cloudBal,
+            } = json.data;
+
+            const hasCloudData =
+              (cloudEvents && cloudEvents.length > 0) ||
+              (cloudCash && cloudCash.length > 0) ||
+              (cloudBal !== undefined && Number(cloudBal) > 0);
+
+            if (isInitial && !hasCloudData) {
+              // Cloud is empty. Check if THIS device has existing local data (e.g. from phone)
+              const localEventsRaw = localStorage.getItem(STORAGE_KEY_PREFIX + 'events');
+              const localEvents = localEventsRaw ? JSON.parse(localEventsRaw) : [];
+              const localCashRaw = localStorage.getItem(STORAGE_KEY_PREFIX + 'cash');
+              const localCash = localCashRaw ? JSON.parse(localCashRaw) : [];
+              const localBal = Number(localStorage.getItem(STORAGE_KEY_PREFIX + 'balance') || 0);
+
+              if (
+                (localEvents && localEvents.length > 0) ||
+                (localCash && localCash.length > 0) ||
+                localBal > 0
+              ) {
+                // Upload this device's existing data to centralized cloud!
+                await persistToCloud(
+                  localEvents,
+                  localCash,
+                  stateRef.current.inventory,
+                  stateRef.current.activityLogs,
+                  localBal
+                );
+                return;
+              }
+            }
+
+            // Update state and local storage with fresh centralized data
+            if (cloudEvents) {
+              setEvents(cloudEvents);
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'events', JSON.stringify(cloudEvents));
+            }
+            if (cloudCash) {
+              setCashTransactions(cloudCash);
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'cash', JSON.stringify(cloudCash));
+            }
+            if (cloudInv) {
+              setInventory(cloudInv);
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'inventory', JSON.stringify(cloudInv));
+            }
+            if (cloudLogs) {
+              setActivityLogs(cloudLogs);
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'logs', JSON.stringify(cloudLogs));
+            }
+            if (cloudBal !== undefined) {
+              setOpeningBalance(Number(cloudBal));
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'balance', String(cloudBal));
+            }
+          } else if (isInitial) {
+            // First time initialization: cloud has null data.
+            // Check if THIS device has stored data from earlier (e.g. user phone)
+            const localEventsRaw = localStorage.getItem(STORAGE_KEY_PREFIX + 'events');
+            const localEvents = localEventsRaw ? JSON.parse(localEventsRaw) : [];
+            const localCashRaw = localStorage.getItem(STORAGE_KEY_PREFIX + 'cash');
+            const localCash = localCashRaw ? JSON.parse(localCashRaw) : [];
+            const localBal = Number(localStorage.getItem(STORAGE_KEY_PREFIX + 'balance') || 0);
+
+            if (
+              (localEvents && localEvents.length > 0) ||
+              (localCash && localCash.length > 0) ||
+              localBal > 0
+            ) {
+              await persistToCloud(
+                localEvents,
+                localCash,
+                stateRef.current.inventory,
+                stateRef.current.activityLogs,
+                localBal
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Sync from cloud error:', err);
+      }
+    },
+    [persistToCloud]
+  );
 
   // Load saved state or default
   useEffect(() => {
@@ -143,6 +302,29 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load local storage state:', e);
     }
 
+    // Immediately trigger cloud sync to get centralized cross-device state
+    syncFromCloud(true);
+
+    // Auto-refresh when tab gains focus or becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud(false);
+      }
+    };
+    const handleFocus = () => {
+      syncFromCloud(false);
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    // Periodic cloud poll every 6 seconds for instantaneous cross-device updates
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud(false);
+      }
+    }, 6000);
+
     // Listen to BroadcastChannel for real-time multi-window sync
     let channel: BroadcastChannel | null = null;
     if ('BroadcastChannel' in window) {
@@ -169,22 +351,27 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
           .channel('royal_sparks_realtime')
           .on('postgres_changes', { event: '*', schema: 'public' }, () => {
             setSyncStatus('synchronizing');
-            // Fetch fresh database records
-            setTimeout(() => setSyncStatus('connected'), 500);
+            syncFromCloud(false);
           })
           .subscribe();
 
         return () => {
           supabase.removeChannel(sub);
           channel?.close();
+          window.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('focus', handleFocus);
+          clearInterval(intervalId);
         };
       }
     }
 
     return () => {
       channel?.close();
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [syncFromCloud]);
 
   // Save to persistent storage and broadcast
   const persistState = useCallback(
@@ -209,11 +396,14 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
           activityLogs: newLogs,
           openingBalance: newBal,
         });
+
+        // Persist to centralized cloud store (accessible to all devices)
+        persistToCloud(newEvents, newCash, newInv, newLogs, newBal);
       } catch (err) {
         console.error('Error persisting state', err);
       }
     },
-    [broadcastSync]
+    [broadcastSync, persistToCloud]
   );
 
   const switchUser = useCallback((userId: string) => {
@@ -719,7 +909,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
 
   const refreshData = async () => {
     setSyncStatus('synchronizing');
-    await new Promise((res) => setTimeout(res, 400));
+    await syncFromCloud(false);
     setSyncStatus('connected');
   };
 
