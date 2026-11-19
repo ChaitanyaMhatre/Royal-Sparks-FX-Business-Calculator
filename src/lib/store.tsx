@@ -169,9 +169,14 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
   const syncFromCloud = useCallback(
     async (isInitial = false) => {
       try {
-        const res = await fetch('/api/sync', {
+        const timestamp = Date.now();
+        const rand = Math.random().toString(36).substring(2, 7);
+        const res = await fetch(`/api/sync?t=${timestamp}&r=${rand}`, {
           cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+          },
         });
         if (!res.ok) return;
         const json = await res.json();
@@ -216,24 +221,40 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            // Update state and local storage with fresh centralized data
+            // Only update state if cloud data has actually changed to prevent unwanted component re-renders!
             if (cloudEvents) {
-              setEvents(cloudEvents);
-              localStorage.setItem(STORAGE_KEY_PREFIX + 'events', JSON.stringify(cloudEvents));
+              const currentEventsStr = JSON.stringify(stateRef.current.events);
+              const cloudEventsStr = JSON.stringify(cloudEvents);
+              if (currentEventsStr !== cloudEventsStr) {
+                setEvents(cloudEvents);
+                localStorage.setItem(STORAGE_KEY_PREFIX + 'events', cloudEventsStr);
+              }
             }
             if (cloudCash) {
-              setCashTransactions(cloudCash);
-              localStorage.setItem(STORAGE_KEY_PREFIX + 'cash', JSON.stringify(cloudCash));
+              const currentCashStr = JSON.stringify(stateRef.current.cashTransactions);
+              const cloudCashStr = JSON.stringify(cloudCash);
+              if (currentCashStr !== cloudCashStr) {
+                setCashTransactions(cloudCash);
+                localStorage.setItem(STORAGE_KEY_PREFIX + 'cash', cloudCashStr);
+              }
             }
             if (cloudInv) {
-              setInventory(cloudInv);
-              localStorage.setItem(STORAGE_KEY_PREFIX + 'inventory', JSON.stringify(cloudInv));
+              const currentInvStr = JSON.stringify(stateRef.current.inventory);
+              const cloudInvStr = JSON.stringify(cloudInv);
+              if (currentInvStr !== cloudInvStr) {
+                setInventory(cloudInv);
+                localStorage.setItem(STORAGE_KEY_PREFIX + 'inventory', cloudInvStr);
+              }
             }
             if (cloudLogs) {
-              setActivityLogs(cloudLogs);
-              localStorage.setItem(STORAGE_KEY_PREFIX + 'logs', JSON.stringify(cloudLogs));
+              const currentLogsStr = JSON.stringify(stateRef.current.activityLogs);
+              const cloudLogsStr = JSON.stringify(cloudLogs);
+              if (currentLogsStr !== cloudLogsStr) {
+                setActivityLogs(cloudLogs);
+                localStorage.setItem(STORAGE_KEY_PREFIX + 'logs', cloudLogsStr);
+              }
             }
-            if (cloudBal !== undefined) {
+            if (cloudBal !== undefined && Number(cloudBal) !== stateRef.current.openingBalance) {
               setOpeningBalance(Number(cloudBal));
               localStorage.setItem(STORAGE_KEY_PREFIX + 'balance', String(cloudBal));
             }
@@ -318,12 +339,12 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
 
-    // Periodic cloud poll every 6 seconds for instantaneous cross-device updates
+    // Periodic cloud poll every 3.5 seconds for instantaneous cross-device updates
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible') {
         syncFromCloud(false);
       }
-    }, 6000);
+    }, 3500);
 
     // Listen to BroadcastChannel for real-time multi-window sync
     let channel: BroadcastChannel | null = null;
@@ -528,6 +549,52 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
           updated_at: new Date().toISOString(),
         };
 
+        // Remove old transactions for this event so we don't have stale/duplicate cash entries
+        updatedCash = updatedCash.filter(
+          (tx) => !(tx.event_id === eventId && (tx.transaction_type === 'payment_received' || tx.transaction_type === 'expense_paid'))
+        );
+
+        // Re-add actual payments
+        if (mergedEvent.payments && mergedEvent.payments.length > 0) {
+          for (const pmt of mergedEvent.payments) {
+            const pmtAmount = Number(pmt.amount) || 0;
+            if (pmtAmount > 0) {
+              updatedCash.unshift({
+                id: pmt.id || 'tx-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+                business_id: 'b1',
+                transaction_type: 'payment_received',
+                amount: pmtAmount,
+                description: `Payment for ${mergedEvent.event_name}`,
+                event_id: mergedEvent.id,
+                payment_id: pmt.id,
+                transaction_date: pmt.payment_date || new Date().toISOString(),
+                created_by_name: currentUser.full_name,
+                created_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
+        // Re-add actual paid expenses
+        if (mergedEvent.expenses && mergedEvent.expenses.length > 0) {
+          for (const exp of mergedEvent.expenses) {
+            if (exp.payment_status === 'paid' && Number(exp.amount) > 0) {
+              updatedCash.unshift({
+                id: exp.id || 'tx-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
+                business_id: 'b1',
+                transaction_type: 'expense_paid',
+                amount: Number(exp.amount),
+                description: `${exp.category}: ${exp.description || 'Expense'} (${mergedEvent.event_name})`,
+                event_id: mergedEvent.id,
+                expense_id: exp.id,
+                transaction_date: exp.expense_date || new Date().toISOString(),
+                created_by_name: currentUser.full_name,
+                created_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
         updatedEvents = events.map((e) => (e.id === eventId ? mergedEvent : e));
         updatedLogs = logActivity('Event Updated', 'event', `Updated event details for ${mergedEvent.event_name}`, mergedEvent.id);
       }
@@ -551,12 +618,12 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     if (!existing) return { success: false, error: 'Event not found' };
 
     const updatedEvents = events.filter((e) => e.id !== eventId);
-    // Remove linked cash transactions or keep with note?
-    // Let's keep cash transactions audited or marked
+    const updatedCash = cashTransactions.filter((tx) => tx.event_id !== eventId);
     const updatedLogs = logActivity('Event Deleted', 'event', `Deleted event: ${existing.event_name}`, eventId);
 
     setEvents(updatedEvents);
-    persistState(updatedEvents, cashTransactions, inventory, updatedLogs, openingBalance);
+    setCashTransactions(updatedCash);
+    persistState(updatedEvents, updatedCash, inventory, updatedLogs, openingBalance);
     setSyncStatus('connected');
     return { success: true };
   };

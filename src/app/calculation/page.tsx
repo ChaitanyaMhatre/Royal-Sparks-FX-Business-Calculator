@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useBusinessStore } from '@/lib/store';
 import { BusinessEvent, EventMaterial, EventExpense, ExpenseCategory, PaymentMethod } from '@/types';
@@ -34,6 +34,7 @@ function CalculationContent() {
 
   const [selectedEventId, setSelectedEventId] = useState<string>(eventIdParam || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const loadedEventIdRef = useRef<string | null>(null);
 
   // 1. Event Details
   const [eventName, setEventName] = useState('');
@@ -42,37 +43,39 @@ function CalculationContent() {
 
   // 2. Material Expenses (dynamic rows: Name, Quantity, Price, Total)
   const [materials, setMaterials] = useState<
-    Array<{ id: string; material_name: string; quantity: number; unit_price: number; total_expense: number }>
+    Array<{ id: string; material_name: string; quantity: number | string; unit_price: number | string; total_expense: number }>
   >([]);
 
   // 3. Additional Expenses (Description, Category, Amount, Paid/Unpaid)
   const [additionalExpenses, setAdditionalExpenses] = useState<
-    Array<{ id: string; description: string; category: ExpenseCategory; amount: number; payment_status: 'paid' | 'unpaid' }>
+    Array<{ id: string; description: string; category: ExpenseCategory; amount: number | string; payment_status: 'paid' | 'unpaid' }>
   >([]);
 
   // 4. Client Payment
-  const [totalClientCharge, setTotalClientCharge] = useState<number>(0);
-  const [amountReceived, setAmountReceived] = useState<number>(0);
+  const [totalClientCharge, setTotalClientCharge] = useState<number | string>(0);
+  const [amountReceived, setAmountReceived] = useState<number | string>(0);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'bank_transfer' | 'other'>('bank_transfer');
 
-  // Load existing event data when selectedEventId changes or on mount
+  // Load existing event data ONLY when selectedEventId changes (e.g. user selects a different event)
+  // NEVER overwrite in-progress form edits when background polling updates events!
   useEffect(() => {
-    if (selectedEventId) {
+    if (selectedEventId && selectedEventId !== loadedEventIdRef.current) {
       const found = events.find((e) => e.id === selectedEventId);
       if (found) {
-        setEventName(found.event_name);
-        setEventDate(found.event_date);
+        loadedEventIdRef.current = selectedEventId;
+        setEventName(found.event_name || '');
+        setEventDate(found.event_date || new Date().toISOString().split('T')[0]);
         setClientName(found.client_name || '');
-        setTotalClientCharge(Number(found.total_client_charge) || 0);
+        setTotalClientCharge(found.total_client_charge ?? 0);
 
         if (found.materials && found.materials.length > 0) {
           setMaterials(
             found.materials.map((m) => ({
-              id: m.id || 'm-' + Math.random(),
+              id: m.id || 'm-' + Math.random().toString(36).substring(2, 6),
               material_name: m.material_name,
-              quantity: Number(m.quantity) || 0,
-              unit_price: Number(m.unit_price) || 0,
+              quantity: m.quantity ?? 0,
+              unit_price: m.unit_price ?? 0,
               total_expense: (Number(m.quantity) || 0) * (Number(m.unit_price) || 0),
             }))
           );
@@ -83,10 +86,10 @@ function CalculationContent() {
         if (found.expenses && found.expenses.length > 0) {
           setAdditionalExpenses(
             found.expenses.map((e) => ({
-              id: e.id || 'e-' + Math.random(),
+              id: e.id || 'e-' + Math.random().toString(36).substring(2, 6),
               description: e.description || '',
               category: e.category,
-              amount: Number(e.amount) || 0,
+              amount: e.amount ?? 0,
               payment_status: e.payment_status,
             }))
           );
@@ -104,35 +107,22 @@ function CalculationContent() {
           setAmountReceived(0);
         }
       }
+    } else if (!selectedEventId) {
+      loadedEventIdRef.current = null;
     }
   }, [selectedEventId, events]);
 
   // Reset to empty new form
   const handleStartNew = () => {
     setSelectedEventId('');
+    loadedEventIdRef.current = null;
     setEventName('');
     setEventDate(new Date().toISOString().split('T')[0]);
     setClientName('');
     setTotalClientCharge(0);
     setAmountReceived(0);
-    setMaterials([
-      {
-        id: 'm-' + Date.now(),
-        material_name: 'Sparcular Cold Spark Granules Pack',
-        quantity: 2,
-        unit_price: 1800,
-        total_expense: 3600,
-      },
-    ]);
-    setAdditionalExpenses([
-      {
-        id: 'e-' + Date.now(),
-        description: 'Transport van',
-        category: 'Transportation',
-        amount: 2000,
-        payment_status: 'paid',
-      },
-    ]);
+    setMaterials([]);
+    setAdditionalExpenses([]);
     router.replace('/calculation');
   };
 
@@ -142,10 +132,10 @@ function CalculationContent() {
       ...materials,
       {
         id: 'm-' + Date.now(),
-        material_name: 'SFX Material',
+        material_name: '',
         quantity: 1,
-        unit_price: 1500,
-        total_expense: 1500,
+        unit_price: 0,
+        total_expense: 0,
       },
     ]);
   };
@@ -170,10 +160,10 @@ function CalculationContent() {
       ...additionalExpenses,
       {
         id: 'e-' + Date.now(),
-        description: 'On-site SFX technicians',
-        category: 'Labour',
-        amount: 3000,
-        payment_status: 'unpaid',
+        description: '',
+        category: 'Transportation',
+        amount: 0,
+        payment_status: 'paid',
       },
     ]);
   };
@@ -257,15 +247,15 @@ function CalculationContent() {
       payments:
         Number(amountReceived) > 0
           ? [
-              {
-                id: 'pmt-' + Date.now(),
-                event_id: selectedEventId || '',
-                amount: Number(amountReceived),
-                payment_date: paymentDate,
-                payment_method: paymentMethod,
-                notes: 'Recorded via Calculation',
-              },
-            ]
+            {
+              id: 'pmt-' + Date.now(),
+              event_id: selectedEventId || '',
+              amount: Number(amountReceived),
+              payment_date: paymentDate,
+              payment_method: paymentMethod,
+              notes: 'Recorded via Calculation',
+            },
+          ]
           : [],
     };
 
@@ -279,6 +269,7 @@ function CalculationContent() {
           : 'New event calculation saved & synchronized!'
       );
       if (res.id) {
+        loadedEventIdRef.current = res.id;
         setSelectedEventId(res.id);
       }
     } else {
@@ -450,7 +441,13 @@ function CalculationContent() {
                     min="0"
                     step="any"
                     value={row.quantity}
-                    onChange={(e) => handleUpdateMaterial(index, 'quantity', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateMaterial(
+                        index,
+                        'quantity',
+                        e.target.value === '' ? '' : Number(e.target.value)
+                      )
+                    }
                     className="w-full px-2.5 py-2 rounded-lg bg-surface border border-surface-border text-white text-xs font-semibold focus:outline-none focus:border-gold-500"
                   />
                 </div>
@@ -464,7 +461,13 @@ function CalculationContent() {
                     min="0"
                     step="any"
                     value={row.unit_price}
-                    onChange={(e) => handleUpdateMaterial(index, 'unit_price', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateMaterial(
+                        index,
+                        'unit_price',
+                        e.target.value === '' ? '' : Number(e.target.value)
+                      )
+                    }
                     className="w-full px-2.5 py-2 rounded-lg bg-surface border border-surface-border text-white text-xs font-semibold focus:outline-none focus:border-gold-500"
                   />
                 </div>
@@ -573,7 +576,13 @@ function CalculationContent() {
                     min="0"
                     step="any"
                     value={row.amount}
-                    onChange={(e) => handleUpdateExpense(index, 'amount', e.target.value)}
+                    onChange={(e) =>
+                      handleUpdateExpense(
+                        index,
+                        'amount',
+                        e.target.value === '' ? '' : Number(e.target.value)
+                      )
+                    }
                     className="w-full px-2.5 py-2 rounded-lg bg-surface border border-surface-border text-white text-xs font-bold text-expense focus:outline-none focus:border-gold-500"
                   />
                 </div>
@@ -590,11 +599,10 @@ function CalculationContent() {
                         row.payment_status === 'paid' ? 'unpaid' : 'paid'
                       )
                     }
-                    className={`w-full py-2 px-2 rounded-lg text-[10px] font-bold uppercase transition-colors ${
-                      row.payment_status === 'paid'
+                    className={`w-full py-2 px-2 rounded-lg text-[10px] font-bold uppercase transition-colors ${row.payment_status === 'paid'
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                         : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                    }`}
+                      }`}
                   >
                     {row.payment_status}
                   </button>
@@ -638,7 +646,10 @@ function CalculationContent() {
               min="0"
               step="any"
               value={totalClientCharge}
-              onChange={(e) => setTotalClientCharge(Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTotalClientCharge(val === '' ? '' : Number(val));
+              }}
               className="w-full px-3 py-2 rounded-xl bg-surface-elevated border border-gold-500/40 text-white font-bold text-sm focus:outline-none focus:border-gold-500"
             />
           </div>
@@ -651,7 +662,10 @@ function CalculationContent() {
               min="0"
               step="any"
               value={amountReceived}
-              onChange={(e) => setAmountReceived(Number(e.target.value) || 0)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setAmountReceived(val === '' ? '' : Number(val));
+              }}
               className="w-full px-3 py-2 rounded-xl bg-surface-elevated border border-emerald-500/40 text-emerald-400 font-bold text-sm focus:outline-none focus:border-gold-500"
             />
           </div>

@@ -49,12 +49,21 @@ export async function GET() {
     }
 
     const cloudData = await res.json();
-    return NextResponse.json({
-      success: true,
-      data: cloudData,
-      url: targetBlob.url,
-      updatedAt: targetBlob.uploadedAt,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: cloudData,
+        url: targetBlob.url,
+        updatedAt: targetBlob.uploadedAt,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error reading centralized cloud state:', error);
     return NextResponse.json(
