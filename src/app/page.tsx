@@ -130,7 +130,7 @@ export default function DashboardPage() {
     });
 
     const values = Object.values(map);
-    return values.length > 0 ? values : [{ month: 'Current', revenue: 75000, expenses: 19500, profit: 55500 }];
+    return values;
   }, [events]);
 
   // 2. Recent Events (Sorted latest first)
@@ -144,17 +144,19 @@ export default function DashboardPage() {
   const fullLedger = useMemo<LedgerItem[]>(() => {
     const rawItems: Omit<LedgerItem, 'runningBalance'>[] = [];
 
-    // A. Original Opening Balance (Baseline)
-    rawItems.push({
-      id: 'tx-opening-base',
-      date: '2026-10-01T00:00:00Z',
-      description: 'Original Business Balance / Opening Balance',
-      type: 'opening_balance',
-      typeLabel: 'Opening Balance',
-      moneyIn: stats.openingCashBalance,
-      moneyOut: 0,
-      recordedBy: 'Admin / Founding Member',
-    });
+    // A. Original Opening Balance (Baseline - only added if greater than 0)
+    if (stats.openingCashBalance > 0) {
+      rawItems.push({
+        id: 'tx-opening-base',
+        date: new Date().toISOString(),
+        description: 'Original Business Balance / Opening Balance',
+        type: 'opening_balance',
+        typeLabel: 'Opening Balance',
+        moneyIn: stats.openingCashBalance,
+        moneyOut: 0,
+        recordedBy: 'Admin / Founding Member',
+      });
+    }
 
     // B. Actual Event Client Payments Received
     events.forEach((evt) => {
@@ -865,19 +867,29 @@ export default function DashboardPage() {
             </h3>
             <span className="text-[10px] text-neutral-400">Bar Chart</span>
           </div>
-          <div className="w-full h-56 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
-                <YAxis stroke="#888" fontSize={10} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Bar dataKey="revenue" name="Revenue" fill="#D4AF37" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" name="Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {monthlyChartData.length === 0 ? (
+            <div className="w-full h-56 sm:h-64 flex flex-col items-center justify-center text-center p-4 rounded-xl bg-surface-elevated/30 border border-dashed border-surface-border">
+              <TrendingUp className="w-8 h-8 text-neutral-600 mb-2" />
+              <p className="text-xs font-semibold text-neutral-300">No event financial data yet</p>
+              <p className="text-[11px] text-neutral-500 max-w-xs mt-1">
+                Calculate your first event to see monthly revenue vs expenses.
+              </p>
+            </div>
+          ) : (
+            <div className="w-full h-56 sm:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                  <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#888" fontSize={10} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Bar dataKey="revenue" name="Revenue" fill="#D4AF37" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name="Expenses" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Chart 2: Overall Profit */}
@@ -888,25 +900,35 @@ export default function DashboardPage() {
             </h3>
             <span className="text-[10px] text-neutral-400">Net Profit</span>
           </div>
-          <div className="w-full h-56 sm:h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
-                <YAxis stroke="#888" fontSize={10} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                <Line
-                  type="monotone"
-                  dataKey="profit"
-                  name="Net Profit"
-                  stroke="#10B981"
-                  strokeWidth={3}
-                  dot={{ r: 5, fill: '#10B981', stroke: '#000' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {monthlyChartData.length === 0 ? (
+            <div className="w-full h-56 sm:h-64 flex flex-col items-center justify-center text-center p-4 rounded-xl bg-surface-elevated/30 border border-dashed border-surface-border">
+              <PiggyBank className="w-8 h-8 text-neutral-600 mb-2" />
+              <p className="text-xs font-semibold text-neutral-300">No profit curves yet</p>
+              <p className="text-[11px] text-neutral-500 max-w-xs mt-1">
+                Net profit trends will render automatically as event calculations are saved.
+              </p>
+            </div>
+          ) : (
+            <div className="w-full h-56 sm:h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                  <XAxis dataKey="month" stroke="#888" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#888" fontSize={10} tickFormatter={(val) => `₹${val / 1000}k`} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="profit"
+                    name="Net Profit"
+                    stroke="#10B981"
+                    strokeWidth={3}
+                    dot={{ r: 5, fill: '#10B981', stroke: '#000' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
@@ -930,8 +952,23 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {recentEvents.map((evt) => {
+        {recentEvents.length === 0 ? (
+          <div className="py-8 flex flex-col items-center justify-center text-center p-4 rounded-xl bg-surface-elevated/30 border border-dashed border-surface-border">
+            <CalendarDays className="w-8 h-8 text-neutral-600 mb-2" />
+            <p className="text-xs font-semibold text-neutral-300">No events recorded yet</p>
+            <p className="text-[11px] text-neutral-500 max-w-sm mt-1 mb-3">
+              Start by calculating your first event. All client charges, expenses, and profits will reflect in real-time.
+            </p>
+            <Link
+              href="/calculation"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-gold-600 via-gold-500 to-gold-400 text-black shadow-gold hover:opacity-95 transition-all"
+            >
+              + Create First Calculation
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {recentEvents.map((evt) => {
             const fin = calculateEventFinances(evt);
 
             return (
@@ -980,6 +1017,7 @@ export default function DashboardPage() {
             );
           })}
         </div>
+      )}
       </div>
 
       {/* ========================================================================= */}

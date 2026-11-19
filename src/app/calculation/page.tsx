@@ -43,32 +43,16 @@ function CalculationContent() {
   // 2. Material Expenses (dynamic rows: Name, Quantity, Price, Total)
   const [materials, setMaterials] = useState<
     Array<{ id: string; material_name: string; quantity: number; unit_price: number; total_expense: number }>
-  >([
-    {
-      id: 'm1',
-      material_name: 'Sparcular Cold Spark Granules Pack',
-      quantity: 4,
-      unit_price: 1800,
-      total_expense: 7200,
-    },
-  ]);
+  >([]);
 
   // 3. Additional Expenses (Description, Category, Amount, Paid/Unpaid)
   const [additionalExpenses, setAdditionalExpenses] = useState<
     Array<{ id: string; description: string; category: ExpenseCategory; amount: number; payment_status: 'paid' | 'unpaid' }>
-  >([
-    {
-      id: 'e1',
-      description: 'Tempo freight to venue',
-      category: 'Transportation',
-      amount: 2500,
-      payment_status: 'paid',
-    },
-  ]);
+  >([]);
 
   // 4. Client Payment
-  const [totalClientCharge, setTotalClientCharge] = useState<number>(50000);
-  const [amountReceived, setAmountReceived] = useState<number>(20000);
+  const [totalClientCharge, setTotalClientCharge] = useState<number>(0);
+  const [amountReceived, setAmountReceived] = useState<number>(0);
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'bank_transfer' | 'other'>('bank_transfer');
 
