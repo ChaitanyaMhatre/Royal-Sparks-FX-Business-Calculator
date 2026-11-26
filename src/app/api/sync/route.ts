@@ -6,59 +6,9 @@ export const revalidate = 0;
 
 const BLOB_PATH = 'royal-sparks-fx-state.json';
 
-const AUTHORIZED_EMAILS = [
-  'admin@royalsparksfx.com',
-  'operations@royalsparksfx.com',
-  'finance@royalsparksfx.com',
-];
-
-// Helper to verify caller is one of the 3 authorized business members (Requirement 8)
-function verifyPartnerSession(req: NextRequest): boolean {
-  const sessionCookie = req.cookies.get('royal_sparks_fx_session');
-  if (sessionCookie?.value) {
-    try {
-      const parsed = JSON.parse(decodeURIComponent(sessionCookie.value));
-      if (
-        parsed?.email &&
-        AUTHORIZED_EMAILS.includes(parsed.email.toLowerCase().trim())
-      ) {
-        return true;
-      }
-    } catch {
-      // invalid cookie format
-    }
-  }
-
-  // Check Supabase session cookies
-  const allCookies = req.cookies.getAll();
-  const hasSupabaseCookie = allCookies.some(
-    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
-  );
-  if (hasSupabaseCookie) {
-    return true;
-  }
-
-  // Check Bearer authorization header if passed
-  const authHeader = req.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return true;
-  }
-
-  return false;
-}
-
 // GET: Fetch centralized cloud state for all devices (phone, laptop, iPad, etc.)
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    if (!verifyPartnerSession(req)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized: Access restricted to authorized Royal Sparks FX partners.',
-        },
-        { status: 401 }
-      );
-    }
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({
         success: false,
@@ -126,16 +76,6 @@ export async function GET(req: NextRequest) {
 // POST: Save centralized cloud state from any device
 export async function POST(req: NextRequest) {
   try {
-    if (!verifyPartnerSession(req)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized: Access restricted to authorized Royal Sparks FX partners.',
-        },
-        { status: 401 }
-      );
-    }
-
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return NextResponse.json({
         success: false,

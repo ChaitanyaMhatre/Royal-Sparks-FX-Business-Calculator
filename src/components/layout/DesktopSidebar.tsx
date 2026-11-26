@@ -5,12 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useBusinessStore } from '@/lib/store';
-import { LayoutDashboard, Calculator, Calendar, ChevronRight, LogOut } from 'lucide-react';
-import { toast } from 'sonner';
+import { LayoutDashboard, Calculator, Calendar, ChevronRight } from 'lucide-react';
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
-  const { currentUser, logout } = useBusinessStore();
+  const { currentUser } = useBusinessStore();
 
   const navLinks = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -75,32 +74,20 @@ export default function DesktopSidebar() {
         })}
       </div>
 
-      {/* User Footer Profile & Logout */}
+      {/* User Footer Profile */}
       <div className="p-4 border-t border-surface-border bg-surface-card/60">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-gold-500/20 text-gold-300 font-bold flex items-center justify-center border border-gold-500/40 text-xs shrink-0">
-              {currentUser.full_name.charAt(0)}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gold-500/20 text-gold-300 font-bold flex items-center justify-center border border-gold-500/40 text-xs">
+            {currentUser.full_name.charAt(0)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-white truncate">
+              {currentUser.full_name.split(' (')[0]}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-white truncate">
-                {currentUser.full_name.split(' (')[0]}
-              </div>
-              <div className="text-[10px] text-gold-400 font-medium uppercase tracking-wider">
-                {currentUser.role}
-              </div>
+            <div className="text-[10px] text-gold-400 font-medium uppercase tracking-wider">
+              {currentUser.role}
             </div>
           </div>
-          <button
-            onClick={() => {
-              toast.info('Signing out...');
-              logout();
-            }}
-            title="Sign Out"
-            className="p-2 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-all shrink-0 cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
       </div>
     </aside>
