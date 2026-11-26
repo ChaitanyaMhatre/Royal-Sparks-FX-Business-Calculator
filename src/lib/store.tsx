@@ -42,6 +42,49 @@ export const INITIAL_MEMBERS: UserProfile[] = [
   },
 ];
 
+// Pre-authorized partner email allowlist (Strictly 3 members)
+export const AUTHORIZED_EMAILS = [
+  'admin@royalsparksfx.com',
+  'operations@royalsparksfx.com',
+  'finance@royalsparksfx.com',
+] as const;
+
+// Cookie session helpers for Next.js middleware and route guards
+export function setAuthSessionCookie(user: UserProfile) {
+  if (typeof document !== 'undefined') {
+    const sessionData = encodeURIComponent(
+      JSON.stringify({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        logged_in_at: Date.now(),
+      })
+    );
+    document.cookie = `royal_sparks_fx_session=${sessionData}; path=/; max-age=2592000; SameSite=Lax`;
+  }
+}
+
+export function clearAuthSessionCookie() {
+  if (typeof document !== 'undefined') {
+    document.cookie = `royal_sparks_fx_session=; path=/; max-age=0; SameSite=Lax`;
+  }
+}
+
+export function getAuthSessionCookie(): UserProfile | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|; )royal_sparks_fx_session=([^;]*)/);
+  if (match && match[1]) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(match[1]));
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 // Initial Empty Inventory
 export const INITIAL_INVENTORY: InventoryItem[] = [];
 
@@ -56,6 +99,10 @@ export const INITIAL_LOGS: ActivityLog[] = [];
 
 interface BusinessStoreContextType {
   currentUser: UserProfile;
+  isAuthenticated: boolean;
+  isLoadingAuth: boolean;
+  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   switchUser: (userId: string) => void;
   syncStatus: SyncStatus;
   events: BusinessEvent[];
@@ -86,7 +133,9 @@ const BusinessStoreContext = createContext<BusinessStoreContextType | null>(null
 const STORAGE_KEY_PREFIX = 'royal_sparks_fx_clean_v2_';
 
 export function BusinessStoreProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_MEMBERS[0]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connected');
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(false);
 
@@ -95,6 +144,8 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
   const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>(INITIAL_CASH_TRANSACTIONS);
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(INITIAL_LOGS);
+
+  const activeUser = currentUser || INITIAL_MEMBERS[0];
 
   // Store reference to latest state for polling and event listeners
   const stateRef = useRef({
@@ -120,7 +171,12 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       try {
         const channel = new BroadcastChannel('royal_sparks_sync');
-        channel.postMessage({ type, data, sender: currentUser.full_name, timestamp: Date.now() });
+        channel.postMessage({
+          type,
+          data,
+          sender: currentUser?.full_name || 'Royal Sparks Member',
+          timestamp: Date.now(),
+        });
         channel.close();
       } catch (err) {
         console.error('BroadcastChannel error', err);
@@ -148,7 +204,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
             inventory: invData,
             activityLogs: logsData,
             openingBalance: balData,
-            user: currentUser.full_name,
+            user: currentUser?.full_name || 'Royal Sparks Member',
           }),
         });
         if (res.ok) {
@@ -297,14 +353,66 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     const live = isSupabaseConfigured();
     setIsSupabaseLive(live);
 
-    try {
-      const savedUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        const match = INITIAL_MEMBERS.find(m => m.id === parsed.id);
-        if (match) setCurrentUser(match);
-      }
+    // Initialize Auth state
+    const initAuth = async () => {
+      setIsLoadingAuth(true);
+      try {
+        if (live) {
+          const supabase = createClient();
+          if (supabase) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.email) {
+              const matched = INITIAL_MEMBERS.find(
+                (m) => m.email.toLowerCase() === session.user.email?.toLowerCase()
+              );
+              if (matched) {
+                const authedUser: UserProfile = { ...matched, id: session.user.id };
+                setCurrentUser(authedUser);
+                setIsAuthenticated(true);
+                setAuthSessionCookie(authedUser);
+                localStorage.setItem(STORAGE_KEY_PREFIX + 'user', JSON.stringify(authedUser));
+                setIsLoadingAuth(false);
+                return;
+              }
+            }
+          }
+        }
 
+        // Check local storage / session cookie
+        const cookieUser = getAuthSessionCookie();
+        const storedUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
+        const userToLoad = cookieUser || (storedUser ? JSON.parse(storedUser) : null);
+
+        if (userToLoad && userToLoad.email) {
+          const matched = INITIAL_MEMBERS.find(
+            (m) => m.email.toLowerCase() === userToLoad.email.toLowerCase()
+          );
+          if (matched) {
+            const authed: UserProfile = { ...matched, id: userToLoad.id || matched.id };
+            setCurrentUser(authed);
+            setIsAuthenticated(true);
+            setAuthSessionCookie(authed);
+          } else {
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+            clearAuthSessionCookie();
+          }
+        } else {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (e) {
+        console.error('Failed to init auth:', e);
+        setCurrentUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    initAuth();
+
+    try {
       const savedEvents = localStorage.getItem(STORAGE_KEY_PREFIX + 'events');
       if (savedEvents) setEvents(JSON.parse(savedEvents));
 
@@ -427,21 +535,109 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     [broadcastSync, persistToCloud]
   );
 
+  const login = useCallback(
+    async (emailInput: string, passwordInput: string = ''): Promise<{ success: boolean; error?: string }> => {
+      const cleanEmail = emailInput.trim().toLowerCase();
+
+      // Strict Requirements: Only 3 pre-authorized partner accounts allowed. No public registration.
+      const matchedMember = INITIAL_MEMBERS.find((m) => m.email.toLowerCase() === cleanEmail);
+      if (!matchedMember) {
+        return {
+          success: false,
+          error: 'Unauthorized: Access restricted to Royal Sparks FX business members. Public registration is disabled.',
+        };
+      }
+
+      if (!passwordInput || passwordInput.trim().length === 0) {
+        return {
+          success: false,
+          error: 'Password is required.',
+        };
+      }
+
+      // Supabase Authentication when configured
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        if (supabase) {
+          try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: passwordInput,
+            });
+
+            if (error) {
+              return {
+                success: false,
+                error: error.message || 'Invalid email or password.',
+              };
+            }
+
+            if (data.user) {
+              const authenticatedUser: UserProfile = {
+                ...matchedMember,
+                id: data.user.id,
+              };
+              setCurrentUser(authenticatedUser);
+              setIsAuthenticated(true);
+              localStorage.setItem(STORAGE_KEY_PREFIX + 'user', JSON.stringify(authenticatedUser));
+              setAuthSessionCookie(authenticatedUser);
+              return { success: true };
+            }
+          } catch (err: any) {
+            return { success: false, error: err.message || 'Authentication failed' };
+          }
+        }
+      }
+
+      // Verified partner login (works in all environments, local or remote)
+      setCurrentUser(matchedMember);
+      setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEY_PREFIX + 'user', JSON.stringify(matchedMember));
+      setAuthSessionCookie(matchedMember);
+      return { success: true };
+    },
+    []
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      if (isSupabaseConfigured()) {
+        const supabase = createClient();
+        if (supabase) {
+          await supabase.auth.signOut();
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase signout warning:', e);
+    }
+
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem(STORAGE_KEY_PREFIX + 'user');
+    clearAuthSessionCookie();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  }, []);
+
   const switchUser = useCallback((userId: string) => {
     const user = INITIAL_MEMBERS.find((m) => m.id === userId);
     if (user) {
       setCurrentUser(user);
+      setIsAuthenticated(true);
       localStorage.setItem(STORAGE_KEY_PREFIX + 'user', JSON.stringify(user));
+      setAuthSessionCookie(user);
     }
   }, []);
 
   const logActivity = useCallback(
     (action: string, entity_type: string, description: string, entity_id?: string) => {
+      const activeUser = currentUser || INITIAL_MEMBERS[0];
       const newLog: ActivityLog = {
         id: 'log-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
         business_id: 'b1',
-        user_id: currentUser.id,
-        user_name: currentUser.full_name,
+        user_id: activeUser.id,
+        user_name: activeUser.full_name,
         action,
         entity_type,
         entity_id,
@@ -480,7 +676,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
           status: eventData.status || 'upcoming',
           total_client_charge: Number(eventData.total_client_charge) || 0,
           version: 1,
-          created_by: currentUser.id,
+          created_by: activeUser.id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           materials: eventData.materials || [],
@@ -502,7 +698,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
                 event_id: newEvent.id,
                 payment_id: pmt.id,
                 transaction_date: pmt.payment_date || new Date().toISOString(),
-                created_by_name: currentUser.full_name,
+                created_by_name: activeUser.full_name,
                 created_at: new Date().toISOString(),
               });
             }
@@ -521,7 +717,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
                 event_id: newEvent.id,
                 expense_id: exp.id,
                 transaction_date: exp.expense_date || new Date().toISOString(),
-                created_by_name: currentUser.full_name,
+                created_by_name: activeUser.full_name,
                 created_at: new Date().toISOString(),
               });
             }
@@ -568,7 +764,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
                 event_id: mergedEvent.id,
                 payment_id: pmt.id,
                 transaction_date: pmt.payment_date || new Date().toISOString(),
-                created_by_name: currentUser.full_name,
+                created_by_name: activeUser.full_name,
                 created_at: new Date().toISOString(),
               });
             }
@@ -588,7 +784,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
                 event_id: mergedEvent.id,
                 expense_id: exp.id,
                 transaction_date: exp.expense_date || new Date().toISOString(),
-                created_by_name: currentUser.full_name,
+                created_by_name: activeUser.full_name,
                 created_at: new Date().toISOString(),
               });
             }
@@ -638,7 +834,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     const newPayment: Payment = {
       ...paymentData,
       id: pmtId,
-      created_by: currentUser.id,
+      created_by: activeUser.id,
       created_at: new Date().toISOString(),
     };
 
@@ -664,7 +860,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       event_id: targetEvent.id,
       payment_id: pmtId,
       transaction_date: paymentData.payment_date || new Date().toISOString(),
-      created_by_name: currentUser.full_name,
+      created_by_name: activeUser.full_name,
       created_at: new Date().toISOString(),
     };
 
@@ -720,7 +916,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
         event_id: targetEvent.id,
         expense_id: expId,
         transaction_date: newExpense.expense_date || new Date().toISOString(),
-        created_by_name: currentUser.full_name,
+        created_by_name: activeUser.full_name,
         created_at: new Date().toISOString(),
       };
       updatedCash = [newCashTx, ...updatedCash];
@@ -783,7 +979,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
         event_id: targetEvent.id,
         expense_id: targetExpense.id,
         transaction_date: new Date().toISOString(),
-        created_by_name: currentUser.full_name,
+        created_by_name: activeUser.full_name,
         created_at: new Date().toISOString(),
       };
       updatedCash = [newCashTx, ...updatedCash];
@@ -822,7 +1018,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       amount: Math.abs(amount),
       description: description,
       transaction_date: new Date().toISOString(),
-      created_by_name: currentUser.full_name,
+      created_by_name: activeUser.full_name,
       created_at: new Date().toISOString(),
     };
 
@@ -859,7 +1055,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       category: data.category,
       payment_method: data.payment_method,
       transaction_date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
-      created_by_name: currentUser.full_name,
+      created_by_name: activeUser.full_name,
       created_at: new Date().toISOString(),
     };
 
@@ -908,7 +1104,7 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
       category: data.category,
       payment_method: data.payment_method,
       transaction_date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
-      created_by_name: currentUser.full_name,
+      created_by_name: activeUser.full_name,
       created_at: new Date().toISOString(),
     };
 
@@ -985,7 +1181,11 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
   return (
     <BusinessStoreContext.Provider
       value={{
-        currentUser,
+        currentUser: currentUser || INITIAL_MEMBERS[0],
+        isAuthenticated,
+        isLoadingAuth,
+        login,
+        logout,
         switchUser,
         syncStatus,
         events,

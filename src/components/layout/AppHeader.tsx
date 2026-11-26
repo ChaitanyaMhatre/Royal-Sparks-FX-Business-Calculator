@@ -15,10 +15,12 @@ import {
   Calendar,
   DollarSign,
   PlusCircle,
+  LogOut,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AppHeader() {
-  const { currentUser, switchUser, syncStatus, isSupabaseLive, refreshData } = useBusinessStore();
+  const { currentUser, switchUser, syncStatus, isSupabaseLive, refreshData, logout } = useBusinessStore();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   return (
@@ -170,9 +172,36 @@ export default function AppHeader() {
                     </div>
                   </button>
                 </div>
+
+                {/* Sign Out Option inside Dropdown */}
+                <div className="pt-2 mt-2 border-t border-surface-border">
+                  <button
+                    onClick={() => {
+                      toast.info('Signing out...');
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs text-rose-400 hover:bg-rose-500/10 transition-colors font-medium cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Dedicated Header Logout Button (Requirement 9 & 10) */}
+          <button
+            onClick={() => {
+              toast.info('Signing out...');
+              logout();
+            }}
+            title="Sign out of Royal Sparks FX"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card hover:bg-rose-500/10 border border-surface-border hover:border-rose-500/40 text-neutral-300 hover:text-rose-400 text-xs font-semibold transition-all cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </div>
     </header>
