@@ -1,0 +1,535 @@
+{
+  "events": [
+    {
+      "id": "evt-1795365050399",
+      "business_id": "b1",
+      "event_name": "Kundegoan",
+      "event_date": "2026-12-03",
+      "client_name": "Sagar Vansh",
+      "client_phone": "",
+      "event_location": "",
+      "description": "",
+      "status": "upcoming",
+      "total_client_charge": 8500,
+      "version": 3,
+      "created_by": "u0000000-0000-0000-0000-000000000001",
+      "created_at": "2026-11-22T16:30:50.399Z",
+      "updated_at": "2026-11-24T08:29:05.749Z",
+      "materials": [
+        {
+          "id": "mat-xgfby",
+          "event_id": "evt-1795365050399",
+          "material_name": "Pyro",
+          "quantity": 12,
+          "unit_price": 150,
+          "total_expense": 1800
+        },
+        {
+          "id": "mat-c51uv",
+          "event_id": "evt-1795365050399",
+          "material_name": "Dry ice ",
+          "quantity": 1,
+          "unit_price": 1500,
+          "total_expense": 1500
+        }
+      ],
+      "expenses": [],
+      "payments": [
+        {
+          "id": "pmt-1795508945749",
+          "event_id": "evt-1795365050399",
+          "amount": 4000,
+          "payment_date": "2026-11-24",
+          "payment_method": "bank_transfer",
+          "notes": "Recorded via Calculation"
+        }
+      ]
+    },
+    {
+      "id": "evt-1795110528516",
+      "business_id": "b1",
+      "event_name": "Wedding Pale",
+      "event_date": "2026-12-12",
+      "client_name": "Mitesh mhatre",
+      "client_phone": "",
+      "event_location": "",
+      "description": "",
+      "status": "upcoming",
+      "total_client_charge": 7000,
+      "version": 16,
+      "created_by": "u0000000-0000-0000-0000-000000000001",
+      "created_at": "2026-11-19T17:48:48.516Z",
+      "updated_at": "2026-11-19T18:56:52.525Z",
+      "materials": [
+        {
+          "id": "mat-9ueoq",
+          "event_id": "evt-1795110528516",
+          "material_name": "Sparcular battery ",
+          "quantity": 1,
+          "unit_price": 300,
+          "total_expense": 300
+        },
+        {
+          "id": "mat-khsfb",
+          "event_id": "evt-1795110528516",
+          "material_name": "Dry ice ",
+          "quantity": 1,
+          "unit_price": 1500,
+          "total_expense": 1500
+        },
+        {
+          "id": "mat-ynd00",
+          "event_id": "evt-1795110528516",
+          "material_name": "Skyshot fuse ",
+          "quantity": 4,
+          "unit_price": 100,
+          "total_expense": 400
+        }
+      ],
+      "expenses": [
+        {
+          "id": "exp-dpshy",
+          "event_id": "evt-1795110528516",
+          "description": "",
+          "category": "Transportation",
+          "amount": 500,
+          "expense_date": "2026-12-12",
+          "payment_status": "unpaid",
+          "payment_method": "none"
+        }
+      ],
+      "payments": [
+        {
+          "id": "pmt-1795114612525",
+          "event_id": "evt-1795110528516",
+          "amount": 2000,
+          "payment_date": "2026-11-19",
+          "payment_method": "bank_transfer",
+          "notes": "Recorded via Calculation"
+        }
+      ]
+    },
+    {
+      "id": "evt-1795110311258",
+      "business_id": "b1",
+      "event_name": "Engagement",
+      "event_date": "2026-11-14",
+      "client_name": "Shivani",
+      "client_phone": "",
+      "event_location": "",
+      "description": "",
+      "status": "upcoming",
+      "total_client_charge": 9000,
+      "version": 3,
+      "created_by": "u0000000-0000-0000-0000-000000000001",
+      "created_at": "2026-11-19T17:45:11.258Z",
+      "updated_at": "2026-11-19T18:55:33.546Z",
+      "materials": [
+        {
+          "id": "mat-jbuk7",
+          "event_id": "evt-1795110311258",
+          "material_name": "Sparcular powder",
+          "quantity": 1,
+          "unit_price": 850,
+          "total_expense": 850
+        },
+        {
+          "id": "mat-7xtpx",
+          "event_id": "evt-1795110311258",
+          "material_name": "CO2 ",
+          "quantity": 1,
+          "unit_price": 1600,
+          "total_expense": 1600
+        },
+        {
+          "id": "mat-yotdg",
+          "event_id": "evt-1795110311258",
+          "material_name": "co2 key",
+          "quantity": 2,
+          "unit_price": 100,
+          "total_expense": 200
+        },
+        {
+          "id": "mat-4la7a",
+          "event_id": "evt-1795110311258",
+          "material_name": "CO2 paper",
+          "quantity": 1,
+          "unit_price": 130,
+          "total_expense": 130
+        }
+      ],
+      "expenses": [],
+      "payments": [
+        {
+          "id": "pmt-1795114533546",
+          "event_id": "evt-1795110311258",
+          "amount": 9000,
+          "payment_date": "2026-11-19",
+          "payment_method": "upi",
+          "notes": "Recorded via Calculation"
+        }
+      ]
+    }
+  ],
+  "cashTransactions": [
+    {
+      "id": "tx-1795538343951",
+      "business_id": "b1",
+      "transaction_type": "cash_withdrawn",
+      "amount": 680,
+      "description": "Food",
+      "category": "Personal withdrawal",
+      "payment_method": "upi",
+      "transaction_date": "2026-11-24T00:00:00.000Z",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-24T16:39:03.951Z"
+    },
+    {
+      "id": "tx-1795509001496",
+      "business_id": "b1",
+      "transaction_type": "cash_withdrawn",
+      "amount": 8600,
+      "description": "Equipment purchase",
+      "category": "Business purchase",
+      "payment_method": "bank_transfer",
+      "transaction_date": "2026-11-24T00:00:00.000Z",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-24T08:30:01.496Z"
+    },
+    {
+      "id": "pmt-1795508945749",
+      "business_id": "b1",
+      "transaction_type": "payment_received",
+      "amount": 4000,
+      "description": "Payment for Kundegoan",
+      "event_id": "evt-1795365050399",
+      "payment_id": "pmt-1795508945749",
+      "transaction_date": "2026-11-24",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-24T08:29:05.749Z"
+    },
+    {
+      "id": "pmt-1795114612525",
+      "business_id": "b1",
+      "transaction_type": "payment_received",
+      "amount": 2000,
+      "description": "Payment for Wedding Pale",
+      "event_id": "evt-1795110528516",
+      "payment_id": "pmt-1795114612525",
+      "transaction_date": "2026-11-19",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-19T18:56:52.525Z"
+    },
+    {
+      "id": "pmt-1795114533546",
+      "business_id": "b1",
+      "transaction_type": "payment_received",
+      "amount": 9000,
+      "description": "Payment for Engagement",
+      "event_id": "evt-1795110311258",
+      "payment_id": "pmt-1795114533546",
+      "transaction_date": "2026-11-19",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-19T18:55:33.546Z"
+    },
+    {
+      "id": "tx-1795110823352",
+      "business_id": "b1",
+      "transaction_type": "cash_withdrawn",
+      "amount": 2000,
+      "description": "Advanced withdrawal",
+      "category": "Other withdrawal",
+      "payment_method": "bank_transfer",
+      "transaction_date": "2026-11-19T00:00:00.000Z",
+      "created_by_name": "Member 1 (Admin & Managing Partner)",
+      "created_at": "2026-11-19T17:53:43.352Z"
+    }
+  ],
+  "openingBalance": 600,
+  "inventory": [],
+  "activityLogs": [
+    {
+      "id": "log-1795538343951-89mg",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Money Withdrawn",
+      "entity_type": "cash",
+      "description": "Withdrew ₹680 (Personal withdrawal - UPI): Food",
+      "created_at": "2026-11-24T16:39:03.951Z"
+    },
+    {
+      "id": "log-1795509001497-0k58",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Money Withdrawn",
+      "entity_type": "cash",
+      "description": "Withdrew ₹8,600 (Business purchase - BANK_TRANSFER): Equipment purchase",
+      "created_at": "2026-11-24T08:30:01.497Z"
+    },
+    {
+      "id": "log-1795508945749-8c44",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795365050399",
+      "description": "Updated event details for Kundegoan",
+      "created_at": "2026-11-24T08:29:05.749Z"
+    },
+    {
+      "id": "log-1795508891716-ujd5",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795365050399",
+      "description": "Updated event details for Kundegoan",
+      "created_at": "2026-11-24T08:28:11.716Z"
+    },
+    {
+      "id": "log-1795365050399-17dq",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Created",
+      "entity_type": "event",
+      "entity_id": "evt-1795365050399",
+      "description": "Created event: Kundegoan",
+      "created_at": "2026-11-22T16:30:50.399Z"
+    },
+    {
+      "id": "log-1795114612525-3d9b",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:56:52.525Z"
+    },
+    {
+      "id": "log-1795114570207-p38j",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:56:10.207Z"
+    },
+    {
+      "id": "log-1795114533546-svkb",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110311258",
+      "description": "Updated event details for Engagement",
+      "created_at": "2026-11-19T18:55:33.546Z"
+    },
+    {
+      "id": "log-1795114493856-5omr",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110311258",
+      "description": "Updated event details for Engagement",
+      "created_at": "2026-11-19T18:54:53.856Z"
+    },
+    {
+      "id": "log-1795114456588-wigu",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:54:16.588Z"
+    },
+    {
+      "id": "log-1795113854741-zpcr",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:44:14.741Z"
+    },
+    {
+      "id": "log-1795113723509-gybf",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:42:03.509Z"
+    },
+    {
+      "id": "log-1795113619575-5di5",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:40:19.575Z"
+    },
+    {
+      "id": "log-1795113572092-7c17",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)","action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:39:32.092Z"
+    },
+    {
+      "id": "log-1795113542379-69u4",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:39:02.379Z"
+    },
+    {
+      "id": "log-1795113489229-2wd4",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:38:09.229Z"
+    },
+    {
+      "id": "log-1795112512109-2a94",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:21:52.109Z"
+    },
+    {
+      "id": "log-1795112477533-k945",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:21:17.533Z"
+    },
+    {
+      "id": "log-1795112462213-4dgv",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:21:02.213Z"
+    },
+    {
+      "id": "log-1795112392600-zfgy",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:19:52.600Z"
+    },
+    {
+      "id": "log-1795112358871-8wup",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T18:19:18.871Z"
+    },
+    {
+      "id": "log-1795110823354-wfs0",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Money Withdrawn",
+      "entity_type": "cash",
+      "description": "Withdrew ₹2,000 (Other withdrawal - BANK_TRANSFER): Advanced withdrawal",
+      "created_at": "2026-11-19T17:53:43.354Z"
+    },
+    {
+      "id": "log-1795110760201-kgtp",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Updated",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Updated event details for Wedding Pale",
+      "created_at": "2026-11-19T17:52:40.201Z"
+    },
+    {
+      "id": "log-1795110528516-qdy4",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Created",
+      "entity_type": "event",
+      "entity_id": "evt-1795110528516",
+      "description": "Created event: Wedding Pale",
+      "created_at": "2026-11-19T17:48:48.516Z"
+    },
+    {
+      "id": "log-1795110311258-4rng",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Event Created",
+      "entity_type": "event",
+      "entity_id": "evt-1795110311258",
+      "description": "Created event: Engagement",
+      "created_at": "2026-11-19T17:45:11.258Z"
+    },
+    {
+      "id": "log-1795110082619-ijh6",
+      "business_id": "b1",
+      "user_id": "u0000000-0000-0000-0000-000000000001",
+      "user_name": "Member 1 (Admin & Managing Partner)",
+      "action": "Opening Balance Updated",
+      "entity_type": "settings",
+      "description": "Corrected opening business balance from ₹0 to ₹600",
+      "created_at": "2026-11-19T17:41:22.619Z"
+    }
+  ],
+  "lastUpdated": "2026-11-24T16:39:04.287Z",
+  "updatedBy": "Member 1 (Admin & Managing Partner)"
+}

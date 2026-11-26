@@ -15,10 +15,11 @@ import {
   Calendar,
   DollarSign,
   PlusCircle,
+  LogOut,
 } from 'lucide-react';
 
 export default function AppHeader() {
-  const { currentUser, switchUser, syncStatus, isSupabaseLive, refreshData } = useBusinessStore();
+  const { currentUser, switchUser, syncStatus, isSupabaseLive, refreshData, logout } = useBusinessStore();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
   return (
@@ -170,9 +171,30 @@ export default function AppHeader() {
                     </div>
                   </button>
                 </div>
+
+                {/* Logout Option in Dropdown */}
+                <div className="pt-2 mt-2 border-t border-surface-border">
+                  <button
+                    onClick={() => logout()}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="font-medium">Log Out</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Quick Header Logout Button */}
+          <button
+            onClick={() => logout()}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-neutral-300 hover:text-red-400 hover:bg-red-500/10 border border-surface-border hover:border-red-500/30 transition-all cursor-pointer"
+            title="Log Out of Shared Session"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-[11px] font-medium">Log Out</span>
+          </button>
         </div>
       </div>
     </header>

@@ -16,6 +16,12 @@ import {
 } from '@/types';
 import { calculateDashboardStats, calculateEventFinances } from './calculations';
 import { createClient, isSupabaseConfigured } from './supabase/client';
+import seedBackupData from '@/lib/seedBackup.json';
+
+// Single Common Credentials for All 3 Partners
+export const COMMON_LOGIN_ID = 'royalsparks';
+export const COMMON_LOGIN_ALT = 'admin@royalsparksfx.com';
+export const COMMON_PASSWORD = 'RoyalSparks@2026';
 
 // Initial 3 Business Members
 export const INITIAL_MEMBERS: UserProfile[] = [
@@ -42,20 +48,19 @@ export const INITIAL_MEMBERS: UserProfile[] = [
   },
 ];
 
-// Initial Empty Inventory
-export const INITIAL_INVENTORY: InventoryItem[] = [];
-
-// Initial Empty Events
-export const INITIAL_EVENTS: BusinessEvent[] = [];
-
-// Initial Empty Cash Transactions Ledger
-export const INITIAL_CASH_TRANSACTIONS: CashTransaction[] = [];
-
-// Initial Empty Activity Logs
-export const INITIAL_LOGS: ActivityLog[] = [];
+// Initial Data with Verified Permanent Backup
+export const INITIAL_INVENTORY: InventoryItem[] = (seedBackupData.inventory || []) as InventoryItem[];
+export const INITIAL_EVENTS: BusinessEvent[] = (seedBackupData.events || []) as BusinessEvent[];
+export const INITIAL_CASH_TRANSACTIONS: CashTransaction[] = (seedBackupData.cashTransactions || []) as CashTransaction[];
+export const INITIAL_LOGS: ActivityLog[] = (seedBackupData.activityLogs || []) as ActivityLog[];
+export const INITIAL_OPENING_BALANCE: number = Number(seedBackupData.openingBalance) || 600;
 
 interface BusinessStoreContextType {
   currentUser: UserProfile;
+  isAuthenticated: boolean;
+  isLoadingAuth: boolean;
+  login: (loginId: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   switchUser: (userId: string) => void;
   syncStatus: SyncStatus;
   events: BusinessEvent[];
@@ -90,7 +95,10 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connected');
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(false);
 
-  const [openingBalance, setOpeningBalance] = useState<number>(0);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
+
+  const [openingBalance, setOpeningBalance] = useState<number>(INITIAL_OPENING_BALANCE);
   const [events, setEvents] = useState<BusinessEvent[]>(INITIAL_EVENTS);
   const [cashTransactions, setCashTransactions] = useState<CashTransaction[]>(INITIAL_CASH_TRANSACTIONS);
   const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_INVENTORY);
@@ -296,6 +304,19 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     // Check Supabase connection
     const live = isSupabaseConfigured();
     setIsSupabaseLive(live);
+
+    // Check shared login session
+    try {
+      const storedToken = localStorage.getItem(STORAGE_KEY_PREFIX + 'auth_token');
+      const hasCookie = typeof document !== 'undefined' && document.cookie.includes('royal_sparks_session=authenticated');
+      if (storedToken === 'authenticated' || hasCookie) {
+        setIsAuthenticated(true);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingAuth(false);
+    }
 
     try {
       const savedUser = localStorage.getItem(STORAGE_KEY_PREFIX + 'user');
@@ -974,6 +995,45 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const login = async (loginId: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmedId = loginId.trim().toLowerCase();
+    const trimmedPass = pass.trim();
+
+    const isIdValid =
+      trimmedId === COMMON_LOGIN_ID.toLowerCase() ||
+      trimmedId === COMMON_LOGIN_ALT.toLowerCase();
+    const isPassValid = trimmedPass === COMMON_PASSWORD;
+
+    if (isIdValid && isPassValid) {
+      setIsAuthenticated(true);
+      try {
+        localStorage.setItem(STORAGE_KEY_PREFIX + 'auth_token', 'authenticated');
+        document.cookie = `royal_sparks_session=authenticated; path=/; max-age=2592000; SameSite=Lax`;
+      } catch {
+        // ignore
+      }
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Invalid Login ID or Password. Please check and try again.',
+    };
+  };
+
+  const logout = async () => {
+    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem(STORAGE_KEY_PREFIX + 'auth_token');
+      document.cookie = `royal_sparks_session=; path=/; max-age=0; SameSite=Lax`;
+    } catch {
+      // ignore
+    }
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+  };
+
   const refreshData = async () => {
     setSyncStatus('synchronizing');
     await syncFromCloud(false);
@@ -986,6 +1046,10 @@ export function BusinessStoreProvider({ children }: { children: ReactNode }) {
     <BusinessStoreContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
+        isLoadingAuth,
+        login,
+        logout,
         switchUser,
         syncStatus,
         events,

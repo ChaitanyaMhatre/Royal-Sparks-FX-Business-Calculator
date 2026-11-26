@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { BusinessStoreProvider } from '@/lib/store';
-import AppHeader from '@/components/layout/AppHeader';
-import DesktopSidebar from '@/components/layout/DesktopSidebar';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import AuthShell from '@/components/auth/AuthShell';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
@@ -39,21 +37,9 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/assets/royal-sparks-fx-logo.jpeg" />
       </head>
-      <body className="bg-black text-white min-h-screen flex antialiased">
+      <body className="bg-black text-white min-h-screen antialiased">
         <BusinessStoreProvider>
-          {/* Desktop Left Sidebar */}
-          <DesktopSidebar />
-
-          {/* Main App Body */}
-          <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
-            <AppHeader />
-            <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 lg:p-8">
-              {children}
-            </main>
-          </div>
-
-          {/* Mobile Bottom Navigation */}
-          <MobileBottomNav />
+          <AuthShell>{children}</AuthShell>
 
           {/* Toast notifications */}
           <Toaster

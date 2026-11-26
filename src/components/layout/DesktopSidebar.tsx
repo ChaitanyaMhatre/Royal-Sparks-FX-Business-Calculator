@@ -5,11 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useBusinessStore } from '@/lib/store';
-import { LayoutDashboard, Calculator, Calendar, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Calculator, Calendar, ChevronRight, LogOut } from 'lucide-react';
 
 export default function DesktopSidebar() {
   const pathname = usePathname();
-  const { currentUser } = useBusinessStore();
+  const { currentUser, logout } = useBusinessStore();
 
   const navLinks = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -89,6 +89,15 @@ export default function DesktopSidebar() {
             </div>
           </div>
         </div>
+
+        <button
+          onClick={() => logout()}
+          className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-medium text-neutral-400 hover:text-red-400 hover:bg-red-500/10 border border-surface-border hover:border-red-500/30 transition-all cursor-pointer"
+          title="Log out of shared session"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Log Out</span>
+        </button>
       </div>
     </aside>
   );
